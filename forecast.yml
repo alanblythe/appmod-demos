@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forecast
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forecast
+  template:
+    metadata:
+      labels:
+        app: forecast
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: forecast
+        image: ipldemo.azurecr.io/forecastapi:latest
+        env:
+        - name: UNITS
+          value: "F"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        ports:
+        - containerPort: 5000
+          name: forecast
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forecast
+spec:
+  ports:
+  - port: 5000
+  selector:
+    app: forecast
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forecast
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5000
+  selector:
+    app: forecast
