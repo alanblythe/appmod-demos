@@ -175,23 +175,23 @@ Instructions
 	`func azure functionapp publish forecastfunc`
 9. hit the url in the output window
 10. go to the azure portal
-11. view the function app in All Resources
-	show the function, click it
-	show various aspects of the function
-	cant be modified since its deployed with a package
+11. view the function app in All Resources  
+	show the function, click it  
+	show various aspects of the function  
+	cant be modified since its deployed with a package  
 
 ## Clean Up
 
-1. delete resource group
+1. delete resource group  
    `az group delete --resource-group rg-ipldemo`
-2. delete k8s deployment + service
+2. delete k8s deployment + service  
     `kubectl delete deployment forecast`
     `kubectl delete service forecast`
-3. delete images from acr
+3. delete images from acr  
    `docker rmi $(docker images -q) -f`
    `docker system prune`
-4. Delete Azure Function
+4. Delete Azure Function  
    `az group delete --resource-group rg-azurefunc`
-5. Delete AKS cluster
+5. Delete AKS cluster  
    `az group delete --resource-group rg-k8s`
 
