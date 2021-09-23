@@ -51,6 +51,12 @@ Add the following to your User PATH environment variable
 `%USERPROFILE%\.azure-kubectl`  
 `%USERPROFILE%\.azure-kubelogin`  
 
+### Azure Functions Core Tools
+Follow the instructions at: https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v3%2Cwindows%2Ccsharp%2Cportal%2Cbash%2Ckeda#v2 to install the Azure Functions Core Tools
+Ensure your User or system PATH is updated with `C:\Program Files\Microsoft\Azure Functions Core Tools\`  
+
+## Restart all terminals and VsCode instances
+This ensures that your PATH environment variable is correct
 ## Azure
 First, ensure you have an subscription that you can deploy your resources to  
 Ensure you can login to Azure using `az login`  
@@ -92,10 +98,10 @@ Instructions
 4. Your terminal should be in the folder you opened, if not cd to it
 5. Run `dotnet new webapi -o forecast.api -n forecast.api`
 6. cd to the new directory `cd forecast.api`
-7.  run `vscode .`, this will open vscode to the new application directory
-8.  VsCode Command Pallette (ctl+shift+P): find `add docker files to workspace` and click
-9.  A new dockerfile should be added to your directory, view to ensure it looks correct
-10. go back to your terminal, `docker image list`, no images should exist
+7. Terminal: run `vscode .`, this will open vscode to the new application directory
+8. VsCode Command Pallette (ctl+shift+P): find `add docker files to workspace` and click
+9. A new dockerfile should be added to your directory, view to ensure it looks correct
+10. Terminal: `docker image list`, no images should exist
 11. VsCode Command Pallette (ctl+shift+P): `Docker Images: Build Image`
 12. Terminal: Run `docker image list`, you should now see your image
 13. Terminal:  
@@ -107,8 +113,8 @@ Instructions
     `docker ps`
 17. Terminal: stop running container  
     `docker stop forecastapi`  
-18. Create ACR in the az cli
-19. Terminal: Create a resource group  
+18. Create ACR in the the terminal with az cli  
+    Create a resource group  
     `az group create --location eastus --resource-group rg-ipldemo`
 20. From here on you will use a name for your ACR such as: `{YourInitials}IplDemo` JklAcrDemo to ensure no DNS conflicts
 20. Terminal: Create an Azure Container Registry resource  
@@ -127,29 +133,65 @@ Instructions
 1. Create a new AKS cluster  
     `az group create --name rg-k8s --location eastus`
     `az aks create --resource-group rg-k8s --name aks-ipldemo --node-count 1 --enable-addons monitoring --generate-ssh-keys`
-    `az aks get-credentials --resource-group rg-k8s --name aks-ipldemo`
+    `az aks get-credentials --resource-group rg-k8s --name aks-ipldemo`    
 2. Give AKS access to ACR to pull images  
-   Azure Portal: All resources, find your ACR {YourAcrName} such as `JklIplDemo`    
-   Access Control (IAM): Click Add -> Add Role Assignment  
-   Select: role AcrPull  
-   Select: AssignAccessTo-> User assigned managed identity
-   Select: Subscription->Your Sub
-   Select: aks-ipldemo-agentpool
-   Click Save  
+   `az aks update -n aks-ipldemo -g rg-k8s --attach-acr {YourAcrName}`
 3. Azure portal: Find your cluster, namespaces menu, see there are no namespaces
-4. VsCode: review yaml file showing service, deployment, and load balancer
-5. kubectl, kubectl get pods 
-6. kubectl, kubectl get namespaces 
-7. look at the resource group, show the created resources including the load balancer
-8. show the load balancer rule, missing
-9.  open vscode to AKS folder
-10. kubectl apply -f forecast.yml
-11. azure portal, AKS
-12. show the workloads, browse around
-13. look at the resource group, show the created resources including the load balancer
-14. show the load balancer rule
+4. VsCode: review `forecast.yml` from the same directory as this Readme  
+   Notice the service, deployment, and loadbalancer
+5. VsCode->Terminal: View running pods  
+    `kubectl get pods`
+7. VsCode->Terminal: view k8s namespaces
+   `kubectl get namespaces`
+10. VsCode: Open Folder, folder that contains the forecast.yml file
+11. VsCode->Terminal: Create our k8s resources
+    `kubectl apply -f forecast.yml`
+12. Azure portal: Find and view your AKS cluster  
+    Click workloads and now see a running pod, forecast, browse around and you can more details
+14. Azure portal: View the updated load balancer  
+    Find your resource group such as: `MC_rg-k8s_aks-ipldemo_eastus`  
+    Click the Load Balancer  
+    Click the Load Balancing Rules menu  
+    Click the one load balancing rule and notice it load  balacing port 80
+
 
 ## Azure Functions and dotnet CLI
+1. Terminal: Create a new Azure function shell project  
+    `func init forecast.func --dotnet`
+2. Terminal:  
+   `cd forecast.func`  
+   `code .`  
+3. Terminal: create a new HTTP triggered function in your project  
+   `func new --name weatherforecast --template "HTTP trigger" --authlevel "anonymous"`
+4. VsCode: View the created files in the File Explorer
+5. VsCode: Copy the contents of azurefuncforecast.cs to `weatherforecast.cs` file
+6. VsCode: F5 to debug the project
+7. Ctrl+Click the URL in the output window to show the forecast data
+8. Terminal: Create a new Azure Function resource (Watch for replacement {your initials})  
+	`az group create --name rg-azurefunc --location eastus`  
+	`az storage account create --name stazurefunc{your initials} --location eastus --resource-group rg-azurefunc --sku Standard_LRS`  
+	`az functionapp create --resource-group rg-azurefunc --consumption-plan-location eastus   --runtime dotnet --functions-version 3 --name forecastfunc --storage-account stazurefunc{your initials}`
+8. Terminal: Publish your file to the Azure Function
+	`func azure functionapp publish forecastfunc`
+9. hit the url in the output window
+10. go to the azure portal
+11. view the function app in All Resources
+	show the function, click it
+	show various aspects of the function
+	cant be modified since its deployed with a package
 
 ## Clean Up
+
+1. delete resource group
+   `az group delete --resource-group rg-ipldemo`
+2. delete k8s deployment + service
+    `kubectl delete deployment forecast`
+    `kubectl delete service forecast`
+3. delete images from acr
+   `docker rmi $(docker images -q) -f`
+   `docker system prune`
+4. Delete Azure Function
+   `az group delete --resource-group rg-azurefunc`
+5. Delete AKS cluster
+   `az group delete --resource-group rg-k8s`
 
